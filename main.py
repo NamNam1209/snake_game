@@ -88,6 +88,8 @@ class Snake:
             direction == Direction.LEFT and self.direction != Direction.RIGHT or
             direction == Direction.RIGHT and self.direction != Direction.LEFT):
             self.direction = direction
+        # If invalid direction, just keep current direction
+        # This prevents accidental game over by pressing opposite direction
     
     def move(self):
         if not self.is_alive:
@@ -343,6 +345,7 @@ class Game:
         self.game_time = 0
         self.max_possible_score = GRID_WIDTH * GRID_HEIGHT - 1  # Maximum cells minus starting snake
         self.player_name = "Player"  # Default player name
+        self.invalid_move_time = 0  # For tracking invalid move feedback
     
     def get_snake_speed(self):
         if self.difficulty == Difficulty.EASY:
@@ -365,6 +368,9 @@ class Game:
                     mouse_click = True
             elif event.type == pygame.KEYDOWN:
                 if self.game_state == GameState.PLAYING:
+                    # Store current direction before attempting to change it
+                    current_direction = self.snake.direction
+                    
                     if event.key == pygame.K_UP:
                         self.snake.change_direction(Direction.UP)
                     elif event.key == pygame.K_DOWN:
@@ -373,6 +379,15 @@ class Game:
                         self.snake.change_direction(Direction.LEFT)
                     elif event.key == pygame.K_RIGHT:
                         self.snake.change_direction(Direction.RIGHT)
+                    
+                    # Add visual feedback for invalid direction changes
+                    if (event.key == pygame.K_UP and current_direction == Direction.DOWN or
+                        event.key == pygame.K_DOWN and current_direction == Direction.UP or
+                        event.key == pygame.K_LEFT and current_direction == Direction.RIGHT or
+                        event.key == pygame.K_RIGHT and current_direction == Direction.LEFT):
+                        # Flash the screen briefly to indicate invalid move
+                        self.invalid_move_time = time.time()
+                        
                 elif self.game_state in [GameState.GAME_OVER, GameState.VICTORY]:
                     if event.key == pygame.K_r:
                         self.reset()
@@ -550,6 +565,13 @@ class Game:
         )
         food_rect = food_text.get_rect(bottomleft=(10, SCREEN_HEIGHT - 10))
         self.screen.blit(food_text, food_rect)
+        
+        # Show visual feedback for invalid move
+        if time.time() - self.invalid_move_time < 0.2:  # Flash for 0.2 seconds
+            # Draw a warning message
+            warning_text = self.small_font.render("Can't reverse direction!", True, RED)
+            warning_rect = warning_text.get_rect(midbottom=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 10))
+            self.screen.blit(warning_text, warning_rect)
     
     def draw_game_over(self):
         self.draw_game()  # Draw the game state in the background
