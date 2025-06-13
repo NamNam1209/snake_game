@@ -5,17 +5,18 @@ Snake Game - A classic 2D game built with Pygame
 import pygame
 import random
 import sys
+import math
 from enum import Enum
 
 # Initialize pygame
 pygame.init()
 
 # Constants
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-GRID_SIZE = 20
-GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE
-GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE
+SCREEN_WIDTH = 400  # Reduced screen size for 10x10 grid
+SCREEN_HEIGHT = 400
+GRID_SIZE = 40  # Increased grid size to make each cell 40x40 pixels
+GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE  # 10 cells wide
+GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE  # 10 cells high
 SNAKE_SPEED = 10  # Lower is slower
 
 # Colors
@@ -24,6 +25,7 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 GRAY = (100, 100, 100)
+YELLOW = (255, 255, 0)  # Color for bonus food
 
 # Direction enum
 class Direction(Enum):
@@ -88,9 +90,9 @@ class Snake:
         if len(self.positions) > self.length:
             self.positions.pop()
     
-    def grow(self):
-        self.length += 1
-        self.score += 10
+    def grow(self, amount=1):
+        self.length += amount
+        self.score += 10 * amount
     
     def draw(self, surface):
         for i, (x, y) in enumerate(self.positions):
@@ -103,6 +105,7 @@ class Snake:
 class Food:
     def __init__(self):
         self.position = (0, 0)
+        self.is_bonus = False
         self.randomize_position()
     
     def randomize_position(self):
@@ -111,14 +114,43 @@ class Food:
             random.randint(0, GRID_HEIGHT - 1)
         )
     
+    def make_bonus(self):
+        self.is_bonus = True
+    
+    def make_regular(self):
+        self.is_bonus = False
+    
     def draw(self, surface):
-        rect = pygame.Rect(
-            self.position[0] * GRID_SIZE,
-            self.position[1] * GRID_SIZE,
-            GRID_SIZE, GRID_SIZE
-        )
-        pygame.draw.rect(surface, RED, rect)
-        pygame.draw.rect(surface, BLACK, rect, 1)  # Border
+        x, y = self.position
+        center_x = x * GRID_SIZE + GRID_SIZE // 2
+        center_y = y * GRID_SIZE + GRID_SIZE // 2
+        
+        if self.is_bonus:
+            # Draw a star (bonus food)
+            self.draw_star(surface, center_x, center_y, GRID_SIZE // 2, YELLOW)
+        else:
+            # Draw regular food (square)
+            rect = pygame.Rect(
+                x * GRID_SIZE,
+                y * GRID_SIZE,
+                GRID_SIZE, GRID_SIZE
+            )
+            pygame.draw.rect(surface, RED, rect)
+            pygame.draw.rect(surface, BLACK, rect, 1)  # Border
+    
+    def draw_star(self, surface, x, y, size, color):
+        # Draw a 5-pointed star
+        points = []
+        for i in range(10):
+            # Alternate between outer and inner points
+            angle = math.pi / 5 * i - math.pi / 2
+            radius = size if i % 2 == 0 else size / 2
+            point_x = x + radius * math.cos(angle)
+            point_y = y + radius * math.sin(angle)
+            points.append((point_x, point_y))
+        
+        pygame.draw.polygon(surface, color, points)
+        pygame.draw.polygon(surface, BLACK, points, 1)  # Border
 
 
 class Game:
@@ -133,6 +165,7 @@ class Game:
         self.snake = Snake()
         self.food = Food()
         self.game_over = False
+        self.food_eaten_count = 0
     
     def handle_events(self):
         for event in pygame.event.get():
@@ -166,12 +199,25 @@ class Game:
         
         # Check if snake ate food
         if self.snake.get_head_position() == self.food.position:
-            self.snake.grow()
+            # Determine growth amount based on food type
+            if self.food.is_bonus:
+                self.snake.grow(3)  # Bonus food makes snake grow by 3
+            else:
+                self.snake.grow(1)  # Regular food makes snake grow by 1
+                self.food_eaten_count += 1
+            
             # Make sure food doesn't spawn on snake
             while True:
                 self.food.randomize_position()
                 if self.food.position not in self.snake.positions:
                     break
+            
+            # Randomly decide if the next food should be a bonus
+            # After eating at least one regular food
+            if not self.food.is_bonus and random.random() < 0.3:  # 30% chance
+                self.food.make_bonus()
+            else:
+                self.food.make_regular()
     
     def draw_grid(self):
         for x in range(0, SCREEN_WIDTH, GRID_SIZE):

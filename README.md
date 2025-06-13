@@ -19,7 +19,7 @@ A classic 2D Snake game built with Pygame where the player controls a growing sn
 
 1. Clone this repository:
 ```
-git clone https://github.com/yourusername/snake_game.git
+git clone https://github.com/NamNam1209/snake_game.git
 cd snake_game
 ```
 
@@ -43,7 +43,9 @@ python main.py
 ### Game Rules
 
 - The snake moves continuously in the current direction
-- Eating food (red squares) increases the snake's length and your score
+- Eating regular food (red squares) increases the snake's length by 1 and your score
+- Special bonus food (yellow stars) appears randomly after eating regular food
+- Eating bonus food increases the snake's length by 3 and gives triple points
 - The game ends if the snake hits the walls or itself
 - Try to achieve the highest score possible!
 
