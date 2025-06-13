@@ -5,10 +5,13 @@ A classic 2D Snake game built with Pygame where the player controls a growing sn
 ## Features
 
 - Classic Snake gameplay mechanics
+- Three difficulty levels (Easy, Normal, Hard)
+- Countdown timer before game starts
 - Score tracking
 - Game over detection with restart option
 - Smooth controls
 - Grid-based movement
+- Special bonus food system
 
 ## Requirements
 
